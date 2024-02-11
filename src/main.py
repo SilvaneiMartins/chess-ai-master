@@ -26,9 +26,12 @@ class Main:
         dragger = self.game.dragger
 
         while True:
+            # mostra o metodo
             game.show_bg(screen)
+            game.show_moves(screen)
             game.show_pieces(screen)
 
+            # se estiver arrastando
             if dragger.dragging:
                 dragger.update_blit(screen)
 
@@ -43,14 +46,23 @@ class Main:
                     # se clicou no quadrado ?
                     if board.squares[clicked_row][clicked_col].has_piece():
                         piece = board.squares[clicked_row][clicked_col].piece
+                        board.calc_moves(piece, clicked_row, clicked_col)
                         dragger.save_initial(event.pos)
                         dragger.drag_piece(piece)
+
+                        # mostra o metodo
+                        game.show_bg(screen)
+                        game.show_moves(screen)
+                        game.show_pieces(screen)
                 
                 # mouse em movimento
                 elif event.type == pygame.MOUSEMOTION:
                     if dragger.dragging:
                         dragger.update_mouse(event.pos)
+                        
+                        # mostra o metodo
                         game.show_bg(screen)
+                        game.show_moves(screen)
                         game.show_pieces(screen)
                         dragger.update_blit(screen)
                 
