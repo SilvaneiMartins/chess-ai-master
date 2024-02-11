@@ -23,6 +23,10 @@ class Board:
         self.squares[initial.row][initial.col].piece = None
         self.squares[final.row][final.col].piece = piece
 
+        # atualização de movimentação da placa do objeto
+        if isinstance(piece, Pawn):
+            self.check_promotion(piece, final)
+
         # mover
         piece.moved = True
 
