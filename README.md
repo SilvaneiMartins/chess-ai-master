@@ -9,7 +9,7 @@
 </h4>
 
 <h1 align="center">
-    <a href="https://imgur.com/a/HHJMW8j"><img src="https://imgur.com/a/HHJMW8j.png" title="source: imgur.com" /></a>
+    <a href="https://imgur.com/PoqhQ2T"><img src="https://i.imgur.com/PoqhQ2T.png" title="source: imgur.com" /></a>
     <br />
 </h1>
 
