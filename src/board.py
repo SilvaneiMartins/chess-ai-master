@@ -27,6 +27,13 @@ class Board:
         if isinstance(piece, Pawn):
             self.check_promotion(piece, final)
 
+        # rei castling
+        if isinstance(piece, King):
+            if self.castling(initial, final):
+                diff = final.col - initial.col
+                rook = piece.left_rook if (diff < 0) else piece.right_rook
+                self.move(rook, rook.moves[-1])
+
         # mover
         piece.moved = True
 
@@ -74,7 +81,7 @@ class Board:
         
         return False
 
-    def calc_moves(self, piece, row, col):
+    def calc_moves(self, piece, row, col, bool=True):
         '''	
             Calcule todos os movimentos possíveis (válidos) de uma peça
             específica em uma posição específica.
@@ -97,8 +104,14 @@ class Board:
                         # crie novo um movimento
                         move = Move(initial, final)
 
-                        # adicione o movimento à lista de movimentos
-                        piece.add_move(move)
+                        # checa potencial cheque
+                        if bool:
+                            if not self.in_check(piece, move):
+                                # adicione o movimento à lista de movimentos
+                                piece.add_move(move)
+                        else:
+                            # adicione o movimento à lista de movimentos
+                            piece.add_move(move)
                     # bloqueio de movimento
                     else:
                         break
@@ -114,13 +127,20 @@ class Board:
                     if self.squares[possible_move_row][possible_move_col].has_enemy_piece(piece.color):
                         # crie quadrados de movimento inicial e final
                         initial = Square(row, col)
-                        final = Square(possible_move_row, possible_move_col)
+                        final_piece = self.squares[possible_move_row][possible_move_col].piece
+                        final = Square(possible_move_row, possible_move_co, final_piece)
 
                         # crie novo um movimento
                         move = Move(initial, final)
 
-                        # adicione o movimento à lista de movimentos
-                        piece.add_move(move)
+                        # checa potencial cheque
+                        if bool:
+                            if not self.in_check(piece, move):
+                                # adicione o movimento à lista de movimentos
+                                piece.add_move(move)
+                        else:
+                            # adicione o movimento à lista de movimentos
+                            piece.add_move(move)
 
         def kinght_moves():
             # 8 possíveis movimentos do cavalo
@@ -142,14 +162,22 @@ class Board:
                     if self.squares[possible_move_row][possible_move_col].isempty_or_enemy(piece.color):
                         # crie quadrados do novo movimento
                         initial = Square(row, col)
-                        final = Square(possible_move_row,
-                                       possible_move_col)  # piece=piece
+                        final_piece = self.squares[possible_move_row][possible_move_col].piece
+                        final = Square(possible_move_row, possible_move_col, final_piece)
 
                         # cria um movimento movimento
                         move = Move(initial, final)
 
-                        # adicione o movimento à lista de movimentos
-                        piece.add_move(move)
+                        # checa potencial cheque
+                        if bool:
+                            if not self.in_check(piece, move):
+                                # adicione o movimento à lista de movimentos
+                                piece.add_move(move)
+                            else:
+                                break
+                        else:
+                            # adicione o movimento à lista de movimentos
+                            piece.add_move(move)
 
         def straigntline_moves(incrs):
             for incr in incrs:
@@ -161,25 +189,37 @@ class Board:
                     if Square.in_range(possible_move_row, possible_move_col):
                         # create initial and final move squares
                         initial = Square(row, col)
-                        final = Square(possible_move_row, possible_move_col)
+                        final_piece = self.squares[possible_move_row][possible_move_col].piece
+                        final = Square(possible_move_row, possible_move_col, final_piece)
 
                         # cria um possivel movimento
                         move = Move(initial, final)
 
                         # vazio - continua o movimento
                         if self.squares[possible_move_row][possible_move_col].isempty():
-                            # adiciona o movimento à lista de movimentos
-                            piece.add_move(move)
+                            # checa potencial cheque
+                            if bool:
+                                if not self.in_check(piece, move):
+                                    # adicione o movimento à lista de movimentos
+                                    piece.add_move(move)
+                            else:
+                                # adicione o movimento à lista de movimentos
+                                piece.add_move(move)
 
-                        if self.squares[possible_move_row][possible_move_col].has_enemy_piece(piece.color):
-                            # adiciona o movimento à lista de movimentos
-                            piece.add_move(move)
+                        elif self.squares[possible_move_row][possible_move_col].has_enemy_piece(piece.color):
+                            # checa potencial cheque
+                            if bool:
+                                if not self.in_check(piece, move):
+                                    # adicione o movimento à lista de movimentos
+                                    piece.add_move(move)
+                            else:
+                                # adicione o movimento à lista de movimentos
+                                piece.add_move(move)
                             break
 
                         # bloqueio de movimento - para o loop
-                        if self.squares[possible_move_row][possible_move_col].has_team_piece(piece.color):
+                        elif self.squares[possible_move_row][possible_move_col].has_team_piece(piece.color):
                             break
-
                     # fora de alcance
                     else:
                         break
@@ -208,8 +248,7 @@ class Board:
                     if self.squares[possible_move_row][possible_move_col].isempty_or_enemy(piece.color):
                         # crie quadrados do novo movimento
                         initial = Square(row, col)
-                        final = Square(possible_move_row,
-                                       possible_move_col)  # piece=piece
+                        final = Square(possible_move_row, possible_move_col)
 
                         # criar novo movimento
                         move = Move(initial, final)
@@ -229,6 +268,7 @@ class Board:
             if not piece.moved:
                 # roque da rainha
                 left_rook = self.squares[row][0].piece
+
                 if isinstance(left_rook, Rook):
                     if not left_rook.moved:
                         for c in range(1, 4):

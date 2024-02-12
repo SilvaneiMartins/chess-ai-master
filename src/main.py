@@ -53,7 +53,7 @@ class Main:
                         piece = board.squares[clicked_row][clicked_col].piece
                         # pedra valida (Color)?
                         if piece.color == game.next_player:
-                            board.calc_moves(piece, clicked_row, clicked_col)
+                            board.calc_moves(piece, clicked_row, clicked_col, bool=True)
                             dragger.save_initial(event.pos)
                             dragger.drag_piece(piece)
 
