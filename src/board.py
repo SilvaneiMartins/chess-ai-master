@@ -1,9 +1,11 @@
+import os
 import copy
 
 from const import *
 from square import Square
 from piece import *
 from move import Move
+from sound import Sound
 
 
 class Board:
@@ -15,21 +17,34 @@ class Board:
         self._add_pieces('white')
         self._add_pieces('black')
 
-    def move(self, piece, move):
+    def move(self, piece, move, testing=False):
         initial = move.initial
         final = move.final
+
+        en_passant_empty = self.squares[initial.row][final.col].isempty()
 
         # atualização de movimentação da placa do console
         self.squares[initial.row][initial.col].piece = None
         self.squares[final.row][final.col].piece = piece
 
-        # atualização de movimentação da placa do objeto
         if isinstance(piece, Pawn):
-            self.check_promotion(piece, final)
+            # captura movimento passante
+            diff = final.col - initial.col
+            if diff != 0 and en_passant_empty:
+                self.squares[initial.row][final.col + diff].piece = None
+                self.squares[final.row][final.col].piece = piece
+                if not testing:
+                    sound = Sound(os.path.join('assets/sounds/capture.wav'))
+                    sound.play()
+
+            # peão de promoção
+            else:
+                # atualização de movimentação da placa do objeto
+                self.check_promotion(piece, final)
 
         # rei castling
         if isinstance(piece, King):
-            if self.castling(initial, final):
+            if self.castling(initial, final) and not testing:
                 diff = final.col - initial.col
                 rook = piece.left_rook if (diff < 0) else piece.right_rook
                 self.move(rook, rook.moves[-1])
@@ -45,7 +60,7 @@ class Board:
 
     def valid_move(self, piece, move):
         return move in piece.moves
-    
+
     def check_promotion(self, piece, final):
         if final.row == 0 or final.row == 7:
             self.squares[final.row][final.col].piece = Queen(piece.color)
@@ -62,14 +77,26 @@ class Board:
             for col in range(COLS):
                 if isinstance(self.squares[row][col].piece, Pawn):
                     self.squares[row][col].piece.en_passant = False
-        
+
+        piece.en_passant = True
+
+    def set_true_en_passant(self, piece):
+
+        if not isinstance(piece, Pawn):
+            return
+
+        for row in range(ROWS):
+            for col in range(COLS):
+                if isinstance(self.squares[row][col].piece, Pawn):
+                    self.squares[row][col].piece.en_passant = False
+
         piece.en_passant = True
 
     def in_check(self, piece, move):
         temp_piece = copy.deepcopy(piece)
         temp_board = copy.deepcopy(self)
         temp_board.move(temp_piece, move, testing=True)
-        
+
         for row in range(ROWS):
             for col in range(COLS):
                 if temp_board.squares[row][col].has_enemy_piece(piece.color):
@@ -78,7 +105,7 @@ class Board:
                     for m in p.moves:
                         if isinstance(m.final.piece, King):
                             return True
-        
+
         return False
 
     def calc_moves(self, piece, row, col, bool=True):
@@ -128,7 +155,8 @@ class Board:
                         # crie quadrados de movimento inicial e final
                         initial = Square(row, col)
                         final_piece = self.squares[possible_move_row][possible_move_col].piece
-                        final = Square(possible_move_row, possible_move_co, final_piece)
+                        final = Square(possible_move_row,
+                                       possible_move_col, final_piece)
 
                         # crie novo um movimento
                         move = Move(initial, final)
@@ -141,6 +169,53 @@ class Board:
                         else:
                             # adicione o movimento à lista de movimentos
                             piece.add_move(move)
+
+            # movimentos passantes
+            r = 3 if piece.color == 'white' else 4
+            fr = 2 if piece.color == 'white' else 5
+
+            # esquerda movimentos passantes
+            if Square.in_range(col - 1) and row == r:
+                if self.squares[row][col - 1].has_enemy_piece(piece.color):
+                    p = self.squares[row][col - 1].piece
+                    if isinstance(p, Pawn):
+                        if p.en_passant:
+                            # cria quadrados de movimento inicial e final
+                            initial = Square(row, col)
+                            final = Square(fr, col - 1, p)
+
+                            # crie novo um movimento
+                            move = Move(initial, final)
+
+                            # checa potencial cheque
+                            if bool:
+                                if not self.in_check(piece, move):
+                                    # adicione o movimento à lista de movimentos
+                                    piece.add_move(move)
+                            else:
+                                # adicione o movimento à lista de movimentos
+                                piece.add_move(move)
+            # direita movimentos passantes
+            if Square.in_range(col + 1) and row == r:
+                if self.squares[row][col + 1].has_enemy_piece(piece.color):
+                    p = self.squares[row][col + 1].piece
+                    if isinstance(p, Pawn):
+                        if p.en_passant:
+                            # cria quadrados de movimento inicial e final
+                            initial = Square(row, col)
+                            final = Square(fr, col + 1, p)
+
+                            # crie novo um movimento
+                            move = Move(initial, final)
+
+                            # checa potencial cheque
+                            if bool:
+                                if not self.in_check(piece, move):
+                                    # adicione o movimento à lista de movimentos
+                                    piece.add_move(move)
+                            else:
+                                # adicione o movimento à lista de movimentos
+                                piece.add_move(move)
 
         def kinght_moves():
             # 8 possíveis movimentos do cavalo
@@ -163,7 +238,8 @@ class Board:
                         # crie quadrados do novo movimento
                         initial = Square(row, col)
                         final_piece = self.squares[possible_move_row][possible_move_col].piece
-                        final = Square(possible_move_row, possible_move_col, final_piece)
+                        final = Square(possible_move_row,
+                                       possible_move_col, final_piece)
 
                         # cria um movimento movimento
                         move = Move(initial, final)
@@ -190,7 +266,8 @@ class Board:
                         # create initial and final move squares
                         initial = Square(row, col)
                         final_piece = self.squares[possible_move_row][possible_move_col].piece
-                        final = Square(possible_move_row, possible_move_col, final_piece)
+                        final = Square(possible_move_row,
+                                       possible_move_col, final_piece)
 
                         # cria um possivel movimento
                         move = Move(initial, final)
